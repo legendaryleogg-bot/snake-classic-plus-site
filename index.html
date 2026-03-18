@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Snake Classic+</title>
+  <meta
+    name="description"
+    content="Snake Classic+ is a clean, focused take on the classic arcade snake game with responsive controls and fast score-chasing runs."
+  >
+  <style>
+    :root {
+      --bg: #09110d;
+      --bg-soft: #122019;
+      --panel: rgba(16, 30, 23, 0.82);
+      --line: rgba(152, 255, 152, 0.16);
+      --text: #edf8ee;
+      --muted: #a8c3ad;
+      --accent: #9cff57;
+      --accent-strong: #d7ff6b;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "SF Mono", "Menlo", "Monaco", monospace;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top, rgba(156, 255, 87, 0.14), transparent 32%),
+        linear-gradient(180deg, #0d1712 0%, #09110d 100%);
+      min-height: 100vh;
+    }
+
+    .wrap {
+      width: min(920px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 32px 0 56px;
+    }
+
+    .hero,
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .hero {
+      padding: 40px 28px 28px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -40px -40px auto;
+      width: 180px;
+      height: 180px;
+      background: radial-gradient(circle, rgba(215, 255, 107, 0.28), transparent 68%);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      display: inline-block;
+      margin-bottom: 14px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--accent-strong);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2 {
+      margin: 0 0 14px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+
+    h1 {
+      font-size: clamp(40px, 7vw, 72px);
+      line-height: 0.95;
+    }
+
+    h2 {
+      font-size: 20px;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    .hero p {
+      max-width: 620px;
+      margin-top: 16px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .card {
+      padding: 24px;
+    }
+
+    ul {
+      margin: 14px 0 0;
+      padding-left: 18px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    li + li {
+      margin-top: 6px;
+    }
+
+    a {
+      color: var(--accent-strong);
+    }
+
+    .footer {
+      margin-top: 18px;
+      padding: 16px 4px 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 720px) {
+      .wrap {
+        width: min(100% - 20px, 920px);
+        padding-top: 20px;
+      }
+
+      .hero,
+      .card {
+        border-radius: 20px;
+      }
+
+      .hero {
+        padding: 28px 20px 22px;
+      }
+
+      .card {
+        padding: 20px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <div class="eyebrow">Arcade iPhone Game</div>
+      <h1>Snake Classic+</h1>
+      <p>
+        Snake Classic+ is a fast, focused take on the arcade original. Guide the snake,
+        chase a higher score, and jump straight back into the next run with responsive
+        controls and a clean retro presentation.
+      </p>
+    </section>
+
+    <section class="grid" aria-label="App details">
+      <article class="card">
+        <h2>What It Is</h2>
+        <p>
+          A score-chasing snake game built for short sessions. Play with swipe controls
+          or on-screen controls, restart quickly, and push for a better run.
+        </p>
+        <ul>
+          <li>Classic snake gameplay with a polished modern feel</li>
+          <li>Fast restarts and clear game states</li>
+          <li>Simple, readable interface built for phone screens</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <h2>Privacy</h2>
+        <p>
+          Snake Classic+ does not require an account and does not collect personal data
+          from players through the app.
+        </p>
+        <ul>
+          <li>Gameplay preferences and related settings may be stored locally on your device</li>
+          <li>No in-app account system</li>
+          <li>No third-party advertising or tracking, if the released build remains unchanged</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <h2>Support</h2>
+        <p>
+          For support, privacy questions, or App Store inquiries, use the contact details
+          below.
+        </p>
+        <ul>
+          <li>Email: <a href="mailto:support@legendaryleo.com">support@legendaryleo.com</a></li>
+          <li>Developer: Legendary Leo</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <h2>Notes</h2>
+        <p>
+          This page is intended to support the App Store listing for Snake Classic+ and can
+          be used as the public privacy-policy URL once hosted at an `https://` address.
+        </p>
+      </article>
+    </section>
+
+    <div class="footer">
+      Last updated: March 17, 2026
+    </div>
+  </main>
+</body>
+</html>
