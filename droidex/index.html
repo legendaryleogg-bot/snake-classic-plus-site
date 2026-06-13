@@ -303,7 +303,7 @@
       <button class="chip" data-type="Battle">Battle</button>
     </div>
     <button class="chip" id="owned-toggle" data-on="false">Owned only</button>
-    <button class="chip" id="unowned-toggle" data-on="false">Unowned only</button>
+    <button class="chip" id="unowned-toggle" data-on="false">Not complete</button>
     <select class="chip" id="sort-select">
       <option value="default">Sort: Default</option>
       <option value="income-desc">Income ↓</option>
@@ -414,7 +414,7 @@ function passesFilter(i){
   if(filters.rarities.size && !filters.rarities.has(d[2])) return false;
   if(filters.types.size && !filters.types.has(d[1])) return false;
   if(filters.ownedOnly && !ownedAny(i)) return false;
-  if(filters.unownedOnly && ownedAny(i)) return false;
+  if(filters.unownedOnly && TIERS.every(t=>has(i,t))) return false;
   return true;
 }
 function render(){
