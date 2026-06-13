@@ -85,6 +85,11 @@
   .thead{display:grid; grid-template-columns:minmax(0,2.1fr) .8fr repeat(5, minmax(0,1fr)); gap:8px; padding:11px 16px; background:var(--panel); font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint); border-bottom:1px solid var(--line); align-items:center}
   .thead .tier{text-align:center}
   .thead .tier em{font-style:normal; color:var(--beskar); opacity:.7; font-size:8px}
+  .thead .tier:nth-child(3){color:rgba(138,148,160,.8)}
+  .thead .tier:nth-child(4){color:rgba(232,179,57,.9)}
+  .thead .tier:nth-child(5){color:rgba(127,215,232,.9)}
+  .thead .tier:nth-child(6){color:rgba(217,143,214,.9)}
+  .thead .tier:nth-child(7){color:rgba(185,196,208,.85)}
   .row{display:grid; grid-template-columns:minmax(0,2.1fr) .8fr repeat(5, minmax(0,1fr)); gap:8px; padding:11px 16px; align-items:center; border-bottom:1px solid rgba(42,51,64,.55); transition:background .12s}
   .row:last-child{border-bottom:none}
   .row:hover{background:rgba(29,37,48,.5)}
@@ -107,6 +112,13 @@
   .cb.bsk:checked{background:linear-gradient(180deg,#d6dee8,#8f9aa8); border-color:var(--beskar)}
   .cb:checked::after{content:""; position:absolute; left:6.5px; top:2.5px; width:5px; height:10px; border:solid #07201e; border-width:0 2.5px 2.5px 0; transform:rotate(42deg)}
   .cb.bsk:checked::after{border-color:#23303f}
+  .cell[data-tier="Default"] .cb:checked{background:linear-gradient(180deg,#9aa3b0,#677082);border-color:#8a94a0}
+  .cell[data-tier="Default"] .cb:checked::after{border-color:#1e2a38}
+  .cell[data-tier="Gold"] .cb:checked{background:linear-gradient(180deg,#e8b339,#b8861f);border-color:#e8b339}
+  .cell[data-tier="Gold"] .cb:checked::after{border-color:#1a1205}
+  .cell[data-tier="Diamond"] .cb:checked{background:linear-gradient(180deg,#7fd7e8,#3da8b8);border-color:#7fd7e8}
+  .cell[data-tier="Rainbow"] .cb:checked{background:linear-gradient(180deg,#d98fd6,#9a5faa);border-color:#d98fd6}
+  .cell[data-tier="Rainbow"] .cb:checked::after{border-color:#1a0520}
   .cb:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
   .inc{font-family:var(--mono); font-size:10.5px; color:var(--ink-faint)}
   .inc.tbc{font-style:italic}
