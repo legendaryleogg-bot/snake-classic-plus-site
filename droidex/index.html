@@ -90,15 +90,26 @@
   .thead .tier:nth-child(5){color:rgba(127,215,232,.9)}
   .thead .tier:nth-child(6){color:rgba(217,143,214,.9)}
   .thead .tier:nth-child(7){color:rgba(185,196,208,.85)}
-  .th-sort{cursor:pointer; user-select:none; display:flex; align-items:center; gap:3px; white-space:nowrap}
-  .th-sort.tier{justify-content:center}
-  .th-sort:hover{color:var(--ink)}
-  .sort-ind{font-size:8px; opacity:.25; transition:opacity .1s; line-height:1; flex:0 0 auto}
-  .th-sort:hover .sort-ind{opacity:.5}
-  .th-sort.sort-asc .sort-ind::after{content:"↑"; opacity:1}
-  .th-sort.sort-desc .sort-ind::after{content:"↓"; opacity:1}
-  .th-sort.sort-asc,.th-sort.sort-desc{color:var(--ink)}
-  .th-sort.sort-asc .sort-ind,.th-sort.sort-desc .sort-ind{opacity:1}
+  .th-col{cursor:pointer;user-select:none;display:flex;align-items:center;gap:4px;white-space:nowrap;padding:1px 0}
+  .th-col.tier{justify-content:center}
+  .th-col:hover{color:var(--ink)}
+  .th-col.af-sorted{color:var(--ink)}
+  .th-sort-arrow{font-size:9px;opacity:0;flex:0 0 auto;line-height:1;color:var(--gold)}
+  .th-filter-dot{width:5px;height:5px;border-radius:50%;background:var(--gold);opacity:0;flex:0 0 auto}
+  .th-chevron{font-size:9px;opacity:.22;flex:0 0 auto;transition:opacity .1s;line-height:1}
+  .th-col:hover .th-chevron{opacity:.55}
+  .th-col.af-active .th-chevron{opacity:.85;color:var(--gold)}
+  .th-col.af-sorted .th-sort-arrow{opacity:1}
+  .th-col.af-filtered .th-filter-dot{opacity:1}
+  .af-drop{position:fixed;z-index:9999;background:#1a2130;border:1px solid rgba(255,255,255,.09);border-radius:10px;box-shadow:0 10px 36px rgba(0,0,0,.55);min-width:180px;padding:5px;display:none}
+  .af-drop.open{display:block}
+  .af-section{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);padding:5px 10px 2px}
+  .af-item{display:block;width:100%;text-align:left;padding:7px 10px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;border:none;background:transparent;color:var(--ink-dim);cursor:pointer;border-radius:6px;transition:background .1s,color .1s;white-space:nowrap}
+  .af-item:hover{background:rgba(255,255,255,.07);color:var(--ink)}
+  .af-item.af-on{color:var(--gold)}
+  .af-item.af-on:hover{background:rgba(232,179,57,.1)}
+  .af-sep{height:1px;background:var(--line);margin:4px 5px}
+  .af-item.af-clear{color:var(--ink-faint);font-size:10.5px}
   .row{display:grid; grid-template-columns:minmax(0,2.1fr) .8fr repeat(5, minmax(0,1fr)); gap:8px; padding:11px 16px; align-items:center; border-bottom:1px solid rgba(42,51,64,.55); transition:background .12s}
   .row:last-child{border-bottom:none}
   .row:hover{background:rgba(29,37,48,.5)}
@@ -311,8 +322,6 @@
       <button class="chip" data-type="Astromech">Astromech</button>
       <button class="chip" data-type="Battle">Battle</button>
     </div>
-    <button class="chip" id="owned-toggle" data-on="false">Owned only</button>
-    <button class="chip" id="unowned-toggle" data-on="false">Not complete</button>
     <div class="spacer"></div>
     <button class="btn" id="share-btn">Share progress</button>
     <button class="btn primary" id="dl-xlsx">Download .xlsx</button>
@@ -320,15 +329,16 @@
     <button class="btn ghost" id="reset">Reset</button>
   </div>
 
+  <div class="af-drop" id="af-drop"></div>
   <div class="manifest">
     <div class="thead">
-      <div class="th-sort" data-col="name">Droid <span class="sort-ind"></span></div>
-      <div class="th-sort" data-col="rarity">Rarity <span class="sort-ind"></span></div>
-      <div class="th-sort tier" data-col="default">Default <span class="sort-ind"></span></div>
-      <div class="th-sort tier" data-col="gold">Gold <span class="sort-ind"></span></div>
-      <div class="th-sort tier" data-col="diamond">Diamond <span class="sort-ind"></span></div>
-      <div class="th-sort tier" data-col="rainbow">Rainbow <span class="sort-ind"></span></div>
-      <div class="th-sort tier" data-col="beskar">Beskar <em>1.5×RB</em> <span class="sort-ind"></span></div>
+      <div class="th-col" data-col="name"><span class="th-sort-arrow"></span><span class="th-label">Droid</span><span class="th-filter-dot"></span><span class="th-chevron">▾</span></div>
+      <div class="th-col" data-col="rarity"><span class="th-sort-arrow"></span><span class="th-label">Rarity</span><span class="th-chevron">▾</span></div>
+      <div class="th-col tier" data-col="default"><span class="th-sort-arrow"></span><span class="th-label">Default</span><span class="th-filter-dot"></span><span class="th-chevron">▾</span></div>
+      <div class="th-col tier" data-col="gold"><span class="th-sort-arrow"></span><span class="th-label">Gold</span><span class="th-filter-dot"></span><span class="th-chevron">▾</span></div>
+      <div class="th-col tier" data-col="diamond"><span class="th-sort-arrow"></span><span class="th-label">Diamond</span><span class="th-filter-dot"></span><span class="th-chevron">▾</span></div>
+      <div class="th-col tier" data-col="rainbow"><span class="th-sort-arrow"></span><span class="th-label">Rainbow</span><span class="th-filter-dot"></span><span class="th-chevron">▾</span></div>
+      <div class="th-col tier" data-col="beskar"><span class="th-sort-arrow"></span><span class="th-label">Beskar <em>1.5×RB</em></span><span class="th-filter-dot"></span><span class="th-chevron">▾</span></div>
     </div>
     <div class="rows" id="rows"></div>
   </div>
@@ -389,7 +399,7 @@ function save(){ try{ localStorage.setItem(KEY,JSON.stringify(state)); localStor
 let saveTimer;
 function flashSaved(){ const el=document.getElementById("saved"); el.classList.add("show"); clearTimeout(saveTimer); saveTimer=setTimeout(()=>el.classList.remove("show"),1100); }
 
-const filters={q:"",rarities:new Set(),types:new Set(),ownedOnly:false,unownedOnly:false,sortCol:null,sortDir:1};
+const filters={q:"",rarities:new Set(),types:new Set(),rowFilter:"all",tierFilters:{},sortCol:null,sortDir:1};
 const css=getComputedStyle(document.documentElement);
 const fmt=n=>n.toLocaleString("en-US");
 function has(i,t){ return !!(state[i] && state[i][t]); }
@@ -409,18 +419,16 @@ function getSortedIndices(){
   return idx.sort((a,b)=>{
     if(col==="name") return dir*DROIDS[a][0].localeCompare(DROIDS[b][0]);
     if(col==="rarity") return dir*(RARITY_RANK[DROIDS[b][2]]-RARITY_RANK[DROIDS[a][2]]);
+    if(dir==="uncollected"){
+      const ua=has(a,col)?1:0, ub=has(b,col)?1:0;
+      if(ua!==ub) return ua-ub;
+      const va=tierIncome(DROIDS[a],col), vb=tierIncome(DROIDS[b],col);
+      if(va===null&&vb===null) return 0; if(va===null) return 1; if(vb===null) return -1;
+      return vb-va;
+    }
     const va=tierIncome(DROIDS[a],col), vb=tierIncome(DROIDS[b],col);
-    if(va===null&&vb===null) return 0;
-    if(va===null) return 1;
-    if(vb===null) return -1;
+    if(va===null&&vb===null) return 0; if(va===null) return 1; if(vb===null) return -1;
     return dir*(vb-va);
-  });
-}
-function updateSortHeaders(){
-  document.querySelectorAll(".th-sort").forEach(el=>{
-    const active=el.dataset.col===filters.sortCol;
-    el.classList.toggle("sort-asc", active&&filters.sortDir===1);
-    el.classList.toggle("sort-desc",active&&filters.sortDir===-1);
   });
 }
 function passesFilter(i){
@@ -428,8 +436,12 @@ function passesFilter(i){
   if(filters.q && !d[0].toLowerCase().includes(filters.q)) return false;
   if(filters.rarities.size && !filters.rarities.has(d[2])) return false;
   if(filters.types.size && !filters.types.has(d[1])) return false;
-  if(filters.ownedOnly && !ownedAny(i)) return false;
-  if(filters.unownedOnly && TIERS.every(t=>has(i,t))) return false;
+  if(filters.rowFilter==="owned" && !ownedAny(i)) return false;
+  if(filters.rowFilter==="incomplete" && TIERS.every(t=>has(i,t))) return false;
+  for(const [t,f] of Object.entries(filters.tierFilters)){
+    if(f==="collected" && !has(i,t)) return false;
+    if(f==="uncollected" && has(i,t)) return false;
+  }
   return true;
 }
 function render(){
@@ -540,18 +552,6 @@ function wireChips(id,key){
   });
 }
 wireChips("rarity-chips","rarities"); wireChips("type-chips","types");
-document.getElementById("owned-toggle").addEventListener("click",e=>{
-  filters.ownedOnly=!filters.ownedOnly;
-  e.target.setAttribute("aria-pressed",filters.ownedOnly);
-  if(filters.ownedOnly){ filters.unownedOnly=false; document.getElementById("unowned-toggle").setAttribute("aria-pressed","false"); }
-  render();
-});
-document.getElementById("unowned-toggle").addEventListener("click",e=>{
-  filters.unownedOnly=!filters.unownedOnly;
-  e.target.setAttribute("aria-pressed",filters.unownedOnly);
-  if(filters.unownedOnly){ filters.ownedOnly=false; document.getElementById("owned-toggle").setAttribute("aria-pressed","false"); }
-  render();
-});
 document.getElementById("reset").addEventListener("click",()=>{ if(!confirm("Clear all tracked droids? This can't be undone.")) return; state={}; deployed={}; save(); render(); });
 
 function buildRows(){
@@ -669,21 +669,108 @@ document.getElementById("pl-body").addEventListener("change",e=>{
   const i=+cb.dataset.i; deployed[i]=cb.checked; if(!deployed[i]) delete deployed[i]; save(); renderPlanner();
 });
 
-// column header sort
-document.querySelectorAll(".th-sort").forEach(el=>{
-  el.addEventListener("click",()=>{
-    const col=el.dataset.col;
-    if(filters.sortCol===col){
-      if(filters.sortDir===1) filters.sortDir=-1;
-      else { filters.sortCol=null; filters.sortDir=1; }
-    } else {
-      filters.sortCol=col;
-      filters.sortDir=1;
-    }
-    updateSortHeaders();
-    render();
+// ---------- AUTOFILTER DROPDOWN ----------
+let afOpenCol=null;
+function closeAF(){
+  document.getElementById("af-drop").classList.remove("open");
+  document.querySelectorAll(".th-col").forEach(el=>el.classList.remove("af-active"));
+  afOpenCol=null;
+}
+function afItem(action,label,on){
+  return '<button class="af-item'+(on?' af-on':'')+'" data-action="'+action+'">'+label+'</button>';
+}
+function getSortSymbol(col,dir){
+  if(dir==="uncollected") return "★";
+  if(col==="name") return dir===1?"↑":"↓";
+  return dir===1?"↓":"↑";
+}
+function buildAFContent(col){
+  const isTier=TIERS.includes(col), isRar=col==="rarity", isName=col==="name";
+  const curSort=filters.sortCol===col?filters.sortDir:null;
+  const tf=filters.tierFilters[col]||"all";
+  let h='<div class="af-section">Sort</div>';
+  if(isName){
+    h+=afItem("sort:1","↑  A → Z",curSort===1);
+    h+=afItem("sort:-1","↓  Z → A",curSort===-1);
+  } else if(isRar){
+    h+=afItem("sort:-1","↑  Common → Mythic",curSort===-1);
+    h+=afItem("sort:1","↓  Mythic → Common",curSort===1);
+  } else {
+    h+=afItem("sort:1","↓  High → Low",curSort===1);
+    h+=afItem("sort:-1","↑  Low → High",curSort===-1);
+    h+=afItem("sort:u","★  Uncollected first",curSort==="uncollected");
+  }
+  h+='<div class="af-sep"></div>';
+  if(isName){
+    h+='<div class="af-section">Row filter</div>';
+    h+=afItem("row:all","All droids",filters.rowFilter==="all");
+    h+=afItem("row:owned","Owned only",filters.rowFilter==="owned");
+    h+=afItem("row:incomplete","Not complete",filters.rowFilter==="incomplete");
+    h+='<div class="af-sep"></div>';
+  } else if(isTier){
+    h+='<div class="af-section">Filter this tier</div>';
+    h+=afItem("tier:all","Show all",tf==="all");
+    h+=afItem("tier:collected","Collected ✓",tf==="collected");
+    h+=afItem("tier:uncollected","Uncollected ✗",tf==="uncollected");
+    h+='<div class="af-sep"></div>';
+  }
+  const hasSort=filters.sortCol===col;
+  const hasFilt=(isName&&filters.rowFilter!=="all")||(isTier&&tf!=="all");
+  if(hasSort||hasFilt) h+=afItem("clear","Clear column",false);
+  return h;
+}
+function openAF(el,col){
+  if(afOpenCol===col){ closeAF(); return; }
+  afOpenCol=col;
+  const drop=document.getElementById("af-drop");
+  drop.innerHTML=buildAFContent(col);
+  const rect=el.getBoundingClientRect();
+  const isTier=el.classList.contains("tier");
+  let left=isTier?rect.left+rect.width/2-90:rect.left;
+  left=Math.max(4,Math.min(left,window.innerWidth-188));
+  drop.style.top=(rect.bottom+4)+"px";
+  drop.style.left=left+"px";
+  drop.classList.add("open");
+  document.querySelectorAll(".th-col").forEach(e=>e.classList.remove("af-active"));
+  el.classList.add("af-active");
+}
+function updateHeaderIndicators(){
+  document.querySelectorAll(".th-col").forEach(el=>{
+    const col=el.dataset.col, isTier=TIERS.includes(col), isName=col==="name";
+    const sorted=filters.sortCol===col;
+    const filtered=(isName&&filters.rowFilter!=="all")||(isTier&&(filters.tierFilters[col]||"all")!=="all");
+    el.classList.toggle("af-sorted",sorted);
+    el.classList.toggle("af-filtered",filtered);
+    const arrow=el.querySelector(".th-sort-arrow");
+    if(arrow) arrow.textContent=sorted?getSortSymbol(col,filters.sortDir):"";
   });
+}
+document.querySelectorAll(".th-col").forEach(el=>{
+  el.addEventListener("click",()=>openAF(el,el.dataset.col));
 });
+document.getElementById("af-drop").addEventListener("click",e=>{
+  const btn=e.target.closest("[data-action]"); if(!btn) return;
+  const action=btn.dataset.action, col=afOpenCol;
+  if(action.startsWith("sort:")){
+    const d=action.slice(5);
+    filters.sortCol=col; filters.sortDir=d==="u"?"uncollected":parseInt(d);
+  } else if(action.startsWith("row:")){
+    filters.rowFilter=action.slice(4);
+  } else if(action.startsWith("tier:")){
+    const f=action.slice(5);
+    if(f==="all") delete filters.tierFilters[col]; else filters.tierFilters[col]=f;
+  } else if(action==="clear"){
+    if(filters.sortCol===col){ filters.sortCol=null; filters.sortDir=1; }
+    if(col==="name") filters.rowFilter="all";
+    if(TIERS.includes(col)) delete filters.tierFilters[col];
+  }
+  updateHeaderIndicators();
+  closeAF();
+  render();
+});
+document.addEventListener("click",e=>{
+  if(!e.target.closest(".th-col")&&!e.target.closest("#af-drop")) closeAF();
+},true);
 
 // next-panel click → scroll to droid
 document.getElementById("next-list").addEventListener("click",e=>{
