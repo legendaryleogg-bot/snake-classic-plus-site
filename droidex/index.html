@@ -9,10 +9,9 @@
 <meta property="og:description" content="Collection tracker, rebirth planner, and income calculator for Droid Tycoon.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://apps.legendaryleo.com/droidex">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<meta property="og:image" content="https://apps.legendaryleo.com/droidex/preview.svg">
+<link rel="stylesheet" href="fonts.css">
+<script src="xlsx.full.min.js"></script>
 <style>
   :root{
     --bg:#0e1218; --bg2:#11161f; --panel:#171d28; --panel2:#1d2530;
@@ -193,6 +192,30 @@
     .inc-eq{text-align:left; width:100%}
     .inc-miles{grid-template-columns:repeat(2,1fr)}
   }
+
+  /* ---------- SORT SELECT ---------- */
+  select.chip{appearance:none; -webkit-appearance:none; cursor:pointer; padding-right:24px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239aa3b0'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 8px center}
+
+  /* ---------- NEXT PANEL ---------- */
+  .next-panel{margin:22px 0 0; border:1px solid var(--line); border-radius:13px;
+    background:linear-gradient(180deg,var(--panel),var(--bg2)); box-shadow:var(--shadow); overflow:hidden}
+  .next-head{display:flex; align-items:center; justify-content:space-between; gap:14px;
+    padding:13px 16px; border-bottom:1px solid var(--line)}
+  .next-row{display:flex; align-items:center; gap:12px; padding:9px 16px;
+    border-bottom:1px solid rgba(42,51,64,.5); cursor:pointer; transition:background .12s; border-radius:0}
+  .next-row:last-child{border-bottom:none}
+  .next-row:hover{background:rgba(29,37,48,.55)}
+  .next-name{font-family:var(--display); font-weight:600; font-size:14px; flex:1 1 auto; min-width:0}
+  .next-tier{font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.06em;
+    text-transform:uppercase; padding:3px 9px; border-radius:6px; white-space:nowrap; border:1px solid}
+  .next-gain{font-family:var(--mono); font-weight:700; font-size:13px; color:var(--gold);
+    margin-left:auto; white-space:nowrap}
+  .next-hint{font-family:var(--mono); font-size:9.5px; color:var(--ink-faint); padding:7px 16px 10px; letter-spacing:.04em}
+
+  /* ---------- SHARE FEEDBACK ---------- */
+  .btn.share-ok{background:linear-gradient(180deg,var(--cyan),#1c9d95); color:#07201e; border-color:var(--cyan)}
 </style>
 </head>
 <body>
@@ -239,6 +262,15 @@
     <div class="pl-hint">Higher tiers satisfy lower requirements. "Any Legendary" = any tier of that droid. A droid only counts as ready once it's collected AND ticked "in base." Tap a droid name to find it in the list below.</div>
   </div>
 
+  <div class="next-panel" id="next-panel">
+    <div class="next-head">
+      <div class="pl-title"><span class="spark"></span> What to Collect Next</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--ink-faint);letter-spacing:.08em;text-transform:uppercase">Top income gains available</div>
+    </div>
+    <div id="next-list"></div>
+    <div class="next-hint">Click a droid name to find it in the list. Shows the single next tier for each droid that gives the highest credits/sec gain.</div>
+  </div>
+
   <div class="controls">
     <label class="search">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
@@ -257,7 +289,15 @@
       <button class="chip" data-type="Battle">Battle</button>
     </div>
     <button class="chip" id="owned-toggle" data-on="false">Owned only</button>
+    <select class="chip" id="sort-select">
+      <option value="default">Sort: Default</option>
+      <option value="income-desc">Income ↓</option>
+      <option value="income-asc">Income ↑</option>
+      <option value="name">Name A–Z</option>
+      <option value="complete">Complete first</option>
+    </select>
     <div class="spacer"></div>
+    <button class="btn" id="share-btn">Share progress</button>
     <button class="btn primary" id="dl-xlsx">Download .xlsx</button>
     <button class="btn" id="dl-csv">Download .csv</button>
     <button class="btn ghost" id="reset">Reset</button>
@@ -328,7 +368,7 @@ function save(){ try{ localStorage.setItem(KEY,JSON.stringify(state)); localStor
 let saveTimer;
 function flashSaved(){ const el=document.getElementById("saved"); el.classList.add("show"); clearTimeout(saveTimer); saveTimer=setTimeout(()=>el.classList.remove("show"),1100); }
 
-const filters={q:"",rarities:new Set(),types:new Set(),ownedOnly:false};
+const filters={q:"",rarities:new Set(),types:new Set(),ownedOnly:false,sort:"default"};
 const css=getComputedStyle(document.documentElement);
 const fmt=n=>n.toLocaleString("en-US");
 function has(i,t){ return !!(state[i] && state[i][t]); }
@@ -340,6 +380,19 @@ function bestTierIncome(i){
 
 const rowsEl=document.getElementById("rows");
 const TOTAL_TIERS=DROIDS.length*TIERS.length;
+function getSortedIndices(){
+  const idx=DROIDS.map((_,i)=>i);
+  switch(filters.sort){
+    case"income-desc": return idx.sort((a,b)=>bestTierIncome(b)-bestTierIncome(a));
+    case"income-asc":  return idx.sort((a,b)=>bestTierIncome(a)-bestTierIncome(b));
+    case"name":        return idx.sort((a,b)=>DROIDS[a][0].localeCompare(DROIDS[b][0]));
+    case"complete":    return idx.sort((a,b)=>{
+      const ca=TIERS.every(t=>has(a,t))?0:1, cb=TIERS.every(t=>has(b,t))?0:1;
+      return ca-cb;
+    });
+    default: return idx;
+  }
+}
 function passesFilter(i){
   const d=DROIDS[i];
   if(filters.q && !d[0].toLowerCase().includes(filters.q)) return false;
@@ -350,7 +403,7 @@ function passesFilter(i){
 }
 function render(){
   let html="";
-  for(let i=0;i<DROIDS.length;i++){
+  for(const i of getSortedIndices()){
     if(!passesFilter(i)) continue;
     const d=DROIDS[i], color=css.getPropertyValue(RAR_COLOR[d[2]]).trim();
     const complete=TIERS.every(t=>has(i,t));
@@ -391,6 +444,30 @@ function updateStats(){
   document.getElementById("eff-cps").textContent=fmt(eff);
   renderMilestones(tierCount);
   renderPlanner();
+  renderNextPanel();
+}
+function renderNextPanel(){
+  const gains=[];
+  for(let i=0;i<DROIDS.length;i++){
+    const d=DROIDS[i], current=bestTierIncome(i);
+    let bestGain=0, bestTier=null;
+    TIERS.forEach(t=>{
+      if(!has(i,t)){ const inc=tierIncome(d,t); if(inc!=null){ const g=inc-current; if(g>bestGain){bestGain=g;bestTier=t;} } }
+    });
+    if(bestGain>0) gains.push({i,gain:bestGain,tier:bestTier});
+  }
+  gains.sort((a,b)=>b.gain-a.gain);
+  const top=gains.slice(0,5);
+  const el=document.getElementById("next-list");
+  if(!top.length){ el.innerHTML='<div class="empty" style="padding:14px 16px"><b>All droids maxed!</b></div>'; return; }
+  el.innerHTML=top.map(({i,gain,tier})=>{
+    const d=DROIDS[i];
+    return '<div class="next-row" data-name="'+d[0]+'">'
+      +'<div class="next-name">'+d[0]+'</div>'
+      +'<div class="next-tier t-'+tier+'">'+TIER_LABEL[tier]+'</div>'
+      +'<div class="next-gain">+'+fmt(gain)+'/s</div>'
+      +'</div>';
+  }).join("");
 }
 const MILESTONES=[["default","Default",25],["gold","Gold",30],["diamond","Diamond",35],["rainbow","Rainbow",40],["beskar","Beskar",60]];
 function renderMilestones(tc){
@@ -547,6 +624,41 @@ document.getElementById("pl-body").addEventListener("change",e=>{
   const cb=e.target.closest(".dep"); if(!cb) return;
   const i=+cb.dataset.i; deployed[i]=cb.checked; if(!deployed[i]) delete deployed[i]; save(); renderPlanner();
 });
+
+// sort select
+document.getElementById("sort-select").addEventListener("change",e=>{ filters.sort=e.target.value; render(); });
+
+// next-panel click → scroll to droid
+document.getElementById("next-list").addEventListener("click",e=>{
+  const r=e.target.closest(".next-row"); if(!r) return;
+  const q=document.getElementById("q"); q.value=r.dataset.name; filters.q=r.dataset.name.toLowerCase(); render();
+  document.querySelector(".manifest").scrollIntoView({behavior:"smooth",block:"start"});
+});
+
+// share progress
+document.getElementById("share-btn").addEventListener("click",()=>{
+  const data={s:state,d:deployed,m:mult};
+  const encoded=btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+  const url=location.origin+location.pathname+"#share="+encoded;
+  const btn=document.getElementById("share-btn");
+  navigator.clipboard.writeText(url).then(()=>{
+    btn.textContent="Copied!"; btn.classList.add("share-ok");
+    setTimeout(()=>{ btn.textContent="Share progress"; btn.classList.remove("share-ok"); },1800);
+  }).catch(()=>{ prompt("Copy this link to share your progress:",url); });
+});
+
+// import from share link
+(function importFromHash(){
+  const hash=location.hash;
+  if(!hash.startsWith("#share=")) return;
+  history.replaceState(null,"",location.pathname);
+  try{
+    const data=JSON.parse(decodeURIComponent(escape(atob(hash.slice(7)))));
+    if(!confirm("Import shared Droidex progress? This replaces your current data.")) return;
+    state=data.s||{}; deployed=data.d||{}; mult=data.m||4.2;
+    save(); document.getElementById("mult").value=mult;
+  }catch(e){}
+})();
 
 render();
 document.getElementById("mult").value=mult;
