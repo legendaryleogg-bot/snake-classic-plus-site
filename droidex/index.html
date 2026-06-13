@@ -90,6 +90,15 @@
   .thead .tier:nth-child(5){color:rgba(127,215,232,.9)}
   .thead .tier:nth-child(6){color:rgba(217,143,214,.9)}
   .thead .tier:nth-child(7){color:rgba(185,196,208,.85)}
+  .th-sort{cursor:pointer; user-select:none; display:flex; align-items:center; gap:3px; white-space:nowrap}
+  .th-sort.tier{justify-content:center}
+  .th-sort:hover{color:var(--ink)}
+  .sort-ind{font-size:8px; opacity:.25; transition:opacity .1s; line-height:1; flex:0 0 auto}
+  .th-sort:hover .sort-ind{opacity:.5}
+  .th-sort.sort-asc .sort-ind::after{content:"↑"; opacity:1}
+  .th-sort.sort-desc .sort-ind::after{content:"↓"; opacity:1}
+  .th-sort.sort-asc,.th-sort.sort-desc{color:var(--ink)}
+  .th-sort.sort-asc .sort-ind,.th-sort.sort-desc .sort-ind{opacity:1}
   .row{display:grid; grid-template-columns:minmax(0,2.1fr) .8fr repeat(5, minmax(0,1fr)); gap:8px; padding:11px 16px; align-items:center; border-bottom:1px solid rgba(42,51,64,.55); transition:background .12s}
   .row:last-child{border-bottom:none}
   .row:hover{background:rgba(29,37,48,.5)}
@@ -304,13 +313,6 @@
     </div>
     <button class="chip" id="owned-toggle" data-on="false">Owned only</button>
     <button class="chip" id="unowned-toggle" data-on="false">Not complete</button>
-    <select class="chip" id="sort-select">
-      <option value="default">Sort: Default</option>
-      <option value="income-desc">Income ↓</option>
-      <option value="income-asc">Income ↑</option>
-      <option value="name">Name A–Z</option>
-      <option value="complete">Complete first</option>
-    </select>
     <div class="spacer"></div>
     <button class="btn" id="share-btn">Share progress</button>
     <button class="btn primary" id="dl-xlsx">Download .xlsx</button>
@@ -320,9 +322,13 @@
 
   <div class="manifest">
     <div class="thead">
-      <div>Droid</div><div>Rarity</div>
-      <div class="tier">Default</div><div class="tier">Gold</div><div class="tier">Diamond</div><div class="tier">Rainbow</div>
-      <div class="tier">Beskar <em>1.5×RB</em></div>
+      <div class="th-sort" data-col="name">Droid <span class="sort-ind"></span></div>
+      <div class="th-sort" data-col="rarity">Rarity <span class="sort-ind"></span></div>
+      <div class="th-sort tier" data-col="default">Default <span class="sort-ind"></span></div>
+      <div class="th-sort tier" data-col="gold">Gold <span class="sort-ind"></span></div>
+      <div class="th-sort tier" data-col="diamond">Diamond <span class="sort-ind"></span></div>
+      <div class="th-sort tier" data-col="rainbow">Rainbow <span class="sort-ind"></span></div>
+      <div class="th-sort tier" data-col="beskar">Beskar <em>1.5×RB</em> <span class="sort-ind"></span></div>
     </div>
     <div class="rows" id="rows"></div>
   </div>
@@ -383,7 +389,7 @@ function save(){ try{ localStorage.setItem(KEY,JSON.stringify(state)); localStor
 let saveTimer;
 function flashSaved(){ const el=document.getElementById("saved"); el.classList.add("show"); clearTimeout(saveTimer); saveTimer=setTimeout(()=>el.classList.remove("show"),1100); }
 
-const filters={q:"",rarities:new Set(),types:new Set(),ownedOnly:false,unownedOnly:false,sort:"default"};
+const filters={q:"",rarities:new Set(),types:new Set(),ownedOnly:false,unownedOnly:false,sortCol:null,sortDir:1};
 const css=getComputedStyle(document.documentElement);
 const fmt=n=>n.toLocaleString("en-US");
 function has(i,t){ return !!(state[i] && state[i][t]); }
@@ -395,18 +401,27 @@ function bestTierIncome(i){
 
 const rowsEl=document.getElementById("rows");
 const TOTAL_TIERS=DROIDS.length*TIERS.length;
+const RARITY_RANK={Common:0,Rare:1,Epic:2,Legendary:3,Mythic:4};
 function getSortedIndices(){
   const idx=DROIDS.map((_,i)=>i);
-  switch(filters.sort){
-    case"income-desc": return idx.sort((a,b)=>bestTierIncome(b)-bestTierIncome(a));
-    case"income-asc":  return idx.sort((a,b)=>bestTierIncome(a)-bestTierIncome(b));
-    case"name":        return idx.sort((a,b)=>DROIDS[a][0].localeCompare(DROIDS[b][0]));
-    case"complete":    return idx.sort((a,b)=>{
-      const ca=TIERS.every(t=>has(a,t))?0:1, cb=TIERS.every(t=>has(b,t))?0:1;
-      return ca-cb;
-    });
-    default: return idx;
-  }
+  const col=filters.sortCol, dir=filters.sortDir;
+  if(!col) return idx;
+  return idx.sort((a,b)=>{
+    if(col==="name") return dir*DROIDS[a][0].localeCompare(DROIDS[b][0]);
+    if(col==="rarity") return dir*(RARITY_RANK[DROIDS[b][2]]-RARITY_RANK[DROIDS[a][2]]);
+    const va=tierIncome(DROIDS[a],col), vb=tierIncome(DROIDS[b],col);
+    if(va===null&&vb===null) return 0;
+    if(va===null) return 1;
+    if(vb===null) return -1;
+    return dir*(vb-va);
+  });
+}
+function updateSortHeaders(){
+  document.querySelectorAll(".th-sort").forEach(el=>{
+    const active=el.dataset.col===filters.sortCol;
+    el.classList.toggle("sort-asc", active&&filters.sortDir===1);
+    el.classList.toggle("sort-desc",active&&filters.sortDir===-1);
+  });
 }
 function passesFilter(i){
   const d=DROIDS[i];
@@ -654,8 +669,21 @@ document.getElementById("pl-body").addEventListener("change",e=>{
   const i=+cb.dataset.i; deployed[i]=cb.checked; if(!deployed[i]) delete deployed[i]; save(); renderPlanner();
 });
 
-// sort select
-document.getElementById("sort-select").addEventListener("change",e=>{ filters.sort=e.target.value; render(); });
+// column header sort
+document.querySelectorAll(".th-sort").forEach(el=>{
+  el.addEventListener("click",()=>{
+    const col=el.dataset.col;
+    if(filters.sortCol===col){
+      if(filters.sortDir===1) filters.sortDir=-1;
+      else { filters.sortCol=null; filters.sortDir=1; }
+    } else {
+      filters.sortCol=col;
+      filters.sortDir=1;
+    }
+    updateSortHeaders();
+    render();
+  });
+});
 
 // next-panel click → scroll to droid
 document.getElementById("next-list").addEventListener("click",e=>{
