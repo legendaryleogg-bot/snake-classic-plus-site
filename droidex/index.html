@@ -9,7 +9,9 @@
 <meta property="og:description" content="Collection tracker, rebirth planner, and income calculator for Droid Tycoon.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://apps.legendaryleo.com/droidex">
-<meta property="og:image" content="https://apps.legendaryleo.com/droidex/preview.svg">
+<meta property="og:image" content="https://apps.legendaryleo.com/droidex/preview.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://apps.legendaryleo.com/droidex/preview.jpg">
 <link rel="stylesheet" href="fonts.css">
 <script src="xlsx.full.min.js"></script>
 <style>
@@ -289,6 +291,7 @@
       <button class="chip" data-type="Battle">Battle</button>
     </div>
     <button class="chip" id="owned-toggle" data-on="false">Owned only</button>
+    <button class="chip" id="unowned-toggle" data-on="false">Unowned only</button>
     <select class="chip" id="sort-select">
       <option value="default">Sort: Default</option>
       <option value="income-desc">Income ↓</option>
@@ -368,7 +371,7 @@ function save(){ try{ localStorage.setItem(KEY,JSON.stringify(state)); localStor
 let saveTimer;
 function flashSaved(){ const el=document.getElementById("saved"); el.classList.add("show"); clearTimeout(saveTimer); saveTimer=setTimeout(()=>el.classList.remove("show"),1100); }
 
-const filters={q:"",rarities:new Set(),types:new Set(),ownedOnly:false,sort:"default"};
+const filters={q:"",rarities:new Set(),types:new Set(),ownedOnly:false,unownedOnly:false,sort:"default"};
 const css=getComputedStyle(document.documentElement);
 const fmt=n=>n.toLocaleString("en-US");
 function has(i,t){ return !!(state[i] && state[i][t]); }
@@ -399,6 +402,7 @@ function passesFilter(i){
   if(filters.rarities.size && !filters.rarities.has(d[2])) return false;
   if(filters.types.size && !filters.types.has(d[1])) return false;
   if(filters.ownedOnly && !ownedAny(i)) return false;
+  if(filters.unownedOnly && ownedAny(i)) return false;
   return true;
 }
 function render(){
@@ -509,7 +513,18 @@ function wireChips(id,key){
   });
 }
 wireChips("rarity-chips","rarities"); wireChips("type-chips","types");
-document.getElementById("owned-toggle").addEventListener("click",e=>{ filters.ownedOnly=!filters.ownedOnly; e.target.setAttribute("aria-pressed",filters.ownedOnly); render(); });
+document.getElementById("owned-toggle").addEventListener("click",e=>{
+  filters.ownedOnly=!filters.ownedOnly;
+  e.target.setAttribute("aria-pressed",filters.ownedOnly);
+  if(filters.ownedOnly){ filters.unownedOnly=false; document.getElementById("unowned-toggle").setAttribute("aria-pressed","false"); }
+  render();
+});
+document.getElementById("unowned-toggle").addEventListener("click",e=>{
+  filters.unownedOnly=!filters.unownedOnly;
+  e.target.setAttribute("aria-pressed",filters.unownedOnly);
+  if(filters.unownedOnly){ filters.ownedOnly=false; document.getElementById("owned-toggle").setAttribute("aria-pressed","false"); }
+  render();
+});
 document.getElementById("reset").addEventListener("click",()=>{ if(!confirm("Clear all tracked droids? This can't be undone.")) return; state={}; deployed={}; save(); render(); });
 
 function buildRows(){
@@ -573,7 +588,9 @@ function reqMet(idx,tier){
   const need=TIER_RANK[tier];
   return TIERS.some((t,k)=>k>=need && has(idx,t));
 }
+const RKEY="droidex_rebirth_v1";
 let plLevel=1, plUserSet=false;
+try{ const r=parseInt(localStorage.getItem(RKEY)); if(r>=1&&r<=20){ plLevel=r; plUserSet=true; } }catch(e){}
 function levelReady(rb){ return rb.reqs.every(([n,t])=>{ const i=NAME2IDX[n]; return reqMet(i,t)&&deployedFor(i); }); }
 function autoPickLevel(){
   if(plUserSet) return;
@@ -612,8 +629,8 @@ function renderPlanner(){
       +'<div class="pl-flag '+flagCls+'">'+flagTxt+'</div></div>';
   document.getElementById("pl-body").innerHTML=rows;
 }
-document.getElementById("pl-prev").addEventListener("click",()=>{ if(plLevel>1){ plLevel--; plUserSet=true; renderPlanner(); } });
-document.getElementById("pl-next").addEventListener("click",()=>{ if(plLevel<REBIRTH.length){ plLevel++; plUserSet=true; renderPlanner(); } });
+document.getElementById("pl-prev").addEventListener("click",()=>{ if(plLevel>1){ plLevel--; plUserSet=true; localStorage.setItem(RKEY,plLevel); renderPlanner(); } });
+document.getElementById("pl-next").addEventListener("click",()=>{ if(plLevel<REBIRTH.length){ plLevel++; plUserSet=true; localStorage.setItem(RKEY,plLevel); renderPlanner(); } });
 document.getElementById("pl-body").addEventListener("click",e=>{
   if(e.target.closest(".pl-deploy")) return;
   const r=e.target.closest(".pl-req"); if(!r) return;
