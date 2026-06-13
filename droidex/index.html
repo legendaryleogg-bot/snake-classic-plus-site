@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Droidex Tracker — Star Wars Droid Tycoon</title>
+<meta name="description" content="Track your Fortnite Star Wars Droid Tycoon collection, plan rebirths, and see your real credits/sec.">
+<meta property="og:title" content="Droidex Tracker — Star Wars Droid Tycoon">
+<meta property="og:description" content="Collection tracker, rebirth planner, and income calculator for Droid Tycoon.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://apps.legendaryleo.com/droidex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --bg:#0e1218; --bg2:#11161f; --panel:#171d28; --panel2:#1d2530;
+    --line:#2a3340; --line2:#39455a;
+    --ink:#e7e2d6; --ink-dim:#9aa3b0; --ink-faint:#677082;
+    --gold:#e8b339; --gold-deep:#b8861f; --cyan:#37d9cf; --beskar:#b9c4d0;
+    --common:#8a94a0; --rare:#4fa3e3; --epic:#a569d6; --legendary:#e8b339; --mythic:#e8554a;
+    --shadow:0 10px 30px rgba(0,0,0,.45);
+    --display:"Chakra Petch",system-ui,sans-serif;
+    --body:"Inter",system-ui,sans-serif;
+    --mono:"Space Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:
+      radial-gradient(1200px 600px at 85% -10%, rgba(232,179,57,.07), transparent 60%),
+      radial-gradient(900px 500px at -5% 110%, rgba(55,217,207,.06), transparent 55%),
+      var(--bg);
+    color:var(--ink); font-family:var(--body); line-height:1.45;
+    -webkit-font-smoothing:antialiased; padding-bottom:60px;
+  }
+  .wrap{max-width:1120px; margin:0 auto; padding:0 18px}
+
+  header{
+    position:sticky; top:0; z-index:20;
+    background:linear-gradient(180deg, rgba(14,18,24,.97), rgba(14,18,24,.86));
+    border-bottom:1px solid var(--line); backdrop-filter:blur(8px);
+  }
+  .head-inner{display:flex; gap:20px; align-items:center; justify-content:space-between; padding:14px 18px; max-width:1120px; margin:0 auto; flex-wrap:wrap}
+  .brand{display:flex; align-items:center; gap:13px; min-width:0}
+  .glyph{width:38px; height:38px; flex:0 0 auto; border-radius:9px; background:linear-gradient(150deg,#202a38,#11161f); border:1px solid var(--line2); display:grid; place-items:center; box-shadow:inset 0 0 12px rgba(232,179,57,.12)}
+  .glyph span{width:13px; height:13px; border-radius:50%; background:radial-gradient(circle at 35% 30%, var(--gold), var(--gold-deep)); box-shadow:0 0 10px rgba(232,179,57,.6)}
+  .title h1{font-family:var(--display); font-weight:700; font-size:18px; letter-spacing:.06em; margin:0; text-transform:uppercase}
+  .title p{margin:1px 0 0; font-size:11.5px; color:var(--ink-faint); letter-spacing:.13em; text-transform:uppercase; font-family:var(--mono)}
+  .hud{display:flex; gap:22px; align-items:center}
+  .stat{display:flex; flex-direction:column; align-items:flex-end; line-height:1.1}
+  .stat .k{font-family:var(--mono); font-size:9.5px; letter-spacing:.18em; color:var(--ink-faint); text-transform:uppercase; margin-bottom:3px}
+  .stat .v{font-family:var(--mono); font-weight:700; font-size:20px; color:var(--ink)}
+  .stat.cps .v{color:var(--gold)}
+  .stat .v small{font-size:11px; color:var(--ink-faint); font-weight:400; margin-left:2px}
+  .meter-wrap{padding:0 18px 11px; max-width:1120px; margin:0 auto}
+  .meter{height:5px; border-radius:4px; background:var(--panel2); overflow:hidden; border:1px solid var(--line)}
+  .meter i{display:block; height:100%; width:0; background:linear-gradient(90deg,var(--gold-deep),var(--gold)); transition:width .4s cubic-bezier(.2,.7,.3,1)}
+
+  .controls{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:22px 0 16px}
+  .search{flex:1 1 200px; min-width:160px; position:relative}
+  .search input{width:100%; background:var(--panel); border:1px solid var(--line); color:var(--ink); border-radius:9px; padding:9px 12px 9px 32px; font-family:var(--body); font-size:13.5px; outline:none}
+  .search input:focus{border-color:var(--gold-deep); box-shadow:0 0 0 3px rgba(232,179,57,.12)}
+  .search svg{position:absolute; left:10px; top:50%; transform:translateY(-50%); width:14px; height:14px; stroke:var(--ink-faint)}
+  .chips{display:flex; gap:6px; flex-wrap:wrap}
+  .chip{font-family:var(--mono); font-size:11px; letter-spacing:.04em; text-transform:uppercase; background:var(--panel); border:1px solid var(--line); color:var(--ink-dim); padding:7px 11px; border-radius:7px; cursor:pointer; user-select:none; transition:.15s; white-space:nowrap}
+  .chip:hover{border-color:var(--line2); color:var(--ink)}
+  .chip[aria-pressed="true"]{background:var(--panel2); color:var(--ink); border-color:var(--gold-deep)}
+  .chip.r-common[aria-pressed="true"]{border-color:var(--common)}
+  .chip.r-rare[aria-pressed="true"]{border-color:var(--rare)}
+  .chip.r-epic[aria-pressed="true"]{border-color:var(--epic)}
+  .chip.r-legendary[aria-pressed="true"]{border-color:var(--legendary)}
+  .chip.r-mythic[aria-pressed="true"]{border-color:var(--mythic)}
+  .btn{font-family:var(--display); font-weight:600; font-size:12.5px; letter-spacing:.05em; text-transform:uppercase; border-radius:8px; padding:9px 14px; cursor:pointer; border:1px solid var(--line2); transition:.15s; white-space:nowrap; background:var(--panel); color:var(--ink)}
+  .btn:hover{border-color:var(--gold-deep)}
+  .btn.primary{background:linear-gradient(180deg,var(--gold),var(--gold-deep)); color:#1a1205; border-color:var(--gold-deep)}
+  .btn.primary:hover{filter:brightness(1.06)}
+  .btn.ghost{background:transparent; color:var(--ink-dim); border-color:var(--line)}
+  .btn.ghost:hover{color:var(--mythic); border-color:var(--mythic)}
+  .spacer{flex:1 1 auto}
+
+  .manifest{border:1px solid var(--line); border-radius:13px; overflow:hidden; background:var(--bg2); box-shadow:var(--shadow)}
+  .thead{display:grid; grid-template-columns:minmax(0,2.1fr) .8fr repeat(5, minmax(0,1fr)); gap:8px; padding:11px 16px; background:var(--panel); font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint); border-bottom:1px solid var(--line); align-items:center}
+  .thead .tier{text-align:center}
+  .thead .tier em{font-style:normal; color:var(--beskar); opacity:.7; font-size:8px}
+  .row{display:grid; grid-template-columns:minmax(0,2.1fr) .8fr repeat(5, minmax(0,1fr)); gap:8px; padding:11px 16px; align-items:center; border-bottom:1px solid rgba(42,51,64,.55); transition:background .12s}
+  .row:last-child{border-bottom:none}
+  .row:hover{background:rgba(29,37,48,.5)}
+  .row.complete{background:linear-gradient(90deg, rgba(232,179,57,.07), transparent 70%)}
+  .dname{display:flex; align-items:center; gap:10px; min-width:0}
+  .dot{width:8px; height:8px; border-radius:50%; flex:0 0 auto}
+  .nm{font-family:var(--display); font-weight:600; font-size:14.5px; letter-spacing:.01em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .ty{font-family:var(--mono); font-size:10px; color:var(--ink-faint); letter-spacing:.08em; text-transform:uppercase; margin-top:1px}
+  .rar{justify-self:start}
+  .rbadge{font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:3px 8px; border-radius:5px; border:1px solid}
+  .b-common{color:var(--common); border-color:rgba(138,148,160,.4); background:rgba(138,148,160,.08)}
+  .b-rare{color:var(--rare); border-color:rgba(79,163,227,.4); background:rgba(79,163,227,.08)}
+  .b-epic{color:var(--epic); border-color:rgba(165,105,214,.4); background:rgba(165,105,214,.08)}
+  .b-legendary{color:var(--legendary); border-color:rgba(232,179,57,.45); background:rgba(232,179,57,.08)}
+  .b-mythic{color:var(--mythic); border-color:rgba(232,85,74,.45); background:rgba(232,85,74,.08)}
+  .cell{display:flex; flex-direction:column; align-items:center; gap:4px}
+  .cb{appearance:none; -webkit-appearance:none; width:22px; height:22px; border-radius:6px; border:1.5px solid var(--line2); background:var(--panel); cursor:pointer; position:relative; transition:.12s; flex:0 0 auto}
+  .cb:hover{border-color:var(--gold-deep)}
+  .cb:checked{background:linear-gradient(180deg,var(--cyan),#1c9d95); border-color:var(--cyan)}
+  .cb.bsk:checked{background:linear-gradient(180deg,#d6dee8,#8f9aa8); border-color:var(--beskar)}
+  .cb:checked::after{content:""; position:absolute; left:6.5px; top:2.5px; width:5px; height:10px; border:solid #07201e; border-width:0 2.5px 2.5px 0; transform:rotate(42deg)}
+  .cb.bsk:checked::after{border-color:#23303f}
+  .cb:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
+  .inc{font-family:var(--mono); font-size:10.5px; color:var(--ink-faint)}
+  .inc.tbc{font-style:italic}
+  .inc.est{color:var(--beskar); opacity:.75; font-style:italic; cursor:help}
+  .empty{padding:48px 20px; text-align:center; color:var(--ink-faint)}
+  .empty b{display:block; font-family:var(--display); color:var(--ink-dim); font-size:15px; margin-bottom:5px; letter-spacing:.04em}
+  footer{margin-top:18px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; color:var(--ink-faint); font-size:11px; font-family:var(--mono); letter-spacing:.04em}
+  .save-note{color:var(--cyan); opacity:0; transition:opacity .3s}
+  .save-note.show{opacity:.85}
+
+  @media (max-width:760px){
+    .hud{gap:14px} .stat .v{font-size:16px}
+    .thead{display:none}
+    .row{grid-template-columns:1fr 1fr; grid-template-areas:"name rar" "tiers tiers"; gap:10px; padding:14px 14px}
+    .dname{grid-area:name} .rar{grid-area:rar; justify-self:end}
+    .tiergrid{grid-area:tiers; display:grid; grid-template-columns:repeat(5,1fr); gap:6px; margin-top:2px}
+    .cell{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:8px 2px}
+    .cell::before{content:attr(data-tier); font-family:var(--mono); font-size:8px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-faint)}
+  }
+  @media (min-width:761px){ .tiergrid{display:contents} .cell::before{display:none} }
+
+  /* ---------- REBIRTH PLANNER ---------- */
+  .planner{margin:22px 0 0; border:1px solid var(--line); border-radius:13px; background:linear-gradient(180deg,var(--panel),var(--bg2)); box-shadow:var(--shadow); overflow:hidden}
+  .pl-head{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px 16px; border-bottom:1px solid var(--line); flex-wrap:wrap}
+  .pl-title{display:flex; align-items:center; gap:9px; font-family:var(--display); font-weight:700; font-size:13px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink)}
+  .pl-title .spark{width:7px; height:7px; border-radius:50%; background:var(--gold); box-shadow:0 0 9px var(--gold)}
+  .pl-nav{display:flex; align-items:center; gap:8px}
+  .pl-step{width:30px; height:30px; border-radius:8px; border:1px solid var(--line2); background:var(--panel2); color:var(--ink); font-size:16px; cursor:pointer; line-height:1; transition:.12s}
+  .pl-step:hover{border-color:var(--gold-deep); color:var(--gold)}
+  .pl-step:disabled{opacity:.3; cursor:not-allowed}
+  .pl-lvl{font-family:var(--display); font-weight:700; font-size:15px; letter-spacing:.04em; min-width:118px; text-align:center}
+  .pl-lvl small{display:block; font-family:var(--mono); font-size:9px; letter-spacing:.14em; color:var(--ink-faint); text-transform:uppercase; margin-top:1px}
+  .pl-goal{font-family:var(--mono); font-size:12px; color:var(--ink-dim); text-align:right}
+  .pl-goal b{display:block; font-size:17px; color:var(--gold); font-weight:700}
+  .pl-body{padding:8px 16px 14px}
+  .pl-req{display:flex; align-items:center; gap:12px; padding:10px 4px; border-bottom:1px solid rgba(42,51,64,.5); cursor:pointer; transition:background .12s; border-radius:6px}
+  .pl-req:last-child{border-bottom:none}
+  .pl-req:hover{background:rgba(29,37,48,.55)}
+  .pl-status{width:24px; height:24px; flex:0 0 auto; border-radius:50%; display:grid; place-items:center; font-size:13px; font-weight:700}
+  .pl-status.ok{background:rgba(55,217,207,.16); color:var(--cyan); border:1px solid rgba(55,217,207,.4)}
+  .pl-status.no{background:rgba(232,85,74,.13); color:var(--mythic); border:1px solid rgba(232,85,74,.35)}
+  .pl-status.warn{background:rgba(232,179,57,.15); color:var(--gold); border:1px solid rgba(232,179,57,.4)}
+  .pl-deploy{display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:9.5px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-faint); cursor:pointer; user-select:none; white-space:nowrap; flex:0 0 auto}
+  .pl-deploy input{appearance:none;-webkit-appearance:none; width:17px; height:17px; border-radius:5px; border:1.5px solid var(--line2); background:var(--panel); position:relative; cursor:pointer; transition:.12s}
+  .pl-deploy input:hover{border-color:var(--gold-deep)}
+  .pl-deploy input:checked{background:linear-gradient(180deg,var(--gold),var(--gold-deep)); border-color:var(--gold-deep)}
+  .pl-deploy input:checked::after{content:""; position:absolute; left:4.5px; top:1.5px; width:4px; height:8px; border:solid #1a1205; border-width:0 2px 2px 0; transform:rotate(42deg)}
+  .pl-dn{flex:1 1 auto; min-width:0}
+  .pl-dn .n{font-family:var(--display); font-weight:600; font-size:14.5px}
+  .pl-dn .s{font-family:var(--mono); font-size:10.5px; color:var(--ink-faint); margin-top:1px}
+  .pl-tier{font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:4px 9px; border-radius:6px; white-space:nowrap; border:1px solid}
+  .t-default{color:var(--common); border-color:rgba(138,148,160,.4); background:rgba(138,148,160,.08)}
+  .t-gold{color:var(--gold); border-color:rgba(232,179,57,.4); background:rgba(232,179,57,.08)}
+  .t-diamond{color:#7fd7e8; border-color:rgba(127,215,232,.4); background:rgba(127,215,232,.08)}
+  .t-rainbow{color:#d98fd6; border-color:rgba(217,143,214,.4); background:rgba(217,143,214,.08)}
+  .t-any{color:var(--epic); border-color:rgba(165,105,214,.4); background:rgba(165,105,214,.08)}
+  .pl-foot{display:flex; align-items:center; justify-content:space-between; gap:10px; padding-top:11px; margin-top:3px; border-top:1px solid var(--line); flex-wrap:wrap}
+  .pl-tally{font-family:var(--mono); font-size:12px; color:var(--ink-dim)}
+  .pl-tally b{color:var(--ink)}
+  .pl-flag{font-family:var(--display); font-weight:700; font-size:12px; letter-spacing:.06em; text-transform:uppercase; padding:6px 12px; border-radius:7px}
+  .pl-flag.go{background:linear-gradient(180deg,var(--cyan),#1c9d95); color:#07201e}
+  .pl-flag.wait{background:var(--panel2); color:var(--ink-dim); border:1px solid var(--line2)}
+  .pl-hint{font-family:var(--mono); font-size:9.5px; color:var(--ink-faint); letter-spacing:.04em; padding:9px 16px 0}
+
+  /* ---------- INCOME / MILESTONES ---------- */
+  .income{margin:22px 0 0; border:1px solid var(--line); border-radius:13px; background:linear-gradient(180deg,var(--panel),var(--bg2)); box-shadow:var(--shadow); padding-bottom:13px}
+  .inc-row{display:flex; align-items:center; justify-content:space-between; gap:16px; padding:14px 16px 12px; flex-wrap:wrap}
+  .inc-mult{display:flex; flex-direction:column; gap:5px}
+  .inc-mult label{font-family:var(--mono); font-size:9.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-faint)}
+  .mult-box{display:flex; align-items:center; gap:3px; font-family:var(--display); font-weight:700; font-size:20px; color:var(--gold); background:var(--panel2); border:1px solid var(--line2); border-radius:9px; padding:4px 12px}
+  .mult-box input{width:62px; background:transparent; border:none; color:var(--gold); font-family:var(--mono); font-weight:700; font-size:18px; outline:none; -moz-appearance:textfield}
+  .mult-box input:focus{color:#ffd56b}
+  .inc-eq{font-family:var(--mono); font-size:13px; color:var(--ink-dim); text-align:right; line-height:1.7}
+  .inc-eq b{color:var(--ink); font-weight:700}
+  .inc-eq b.big{font-size:21px; color:var(--gold)}
+  .inc-miles{display:grid; grid-template-columns:repeat(5,1fr); gap:8px; padding:2px 16px 0}
+  .mile{border:1px solid var(--line); border-radius:9px; padding:9px 10px; background:var(--panel2); transition:.15s}
+  .mile.done{border-color:var(--gold-deep); background:linear-gradient(180deg,rgba(232,179,57,.12),var(--panel2))}
+  .m-top{display:flex; align-items:center; justify-content:space-between; gap:6px}
+  .m-name{font-family:var(--display); font-weight:600; font-size:12.5px; color:var(--ink)}
+  .m-bonus{font-family:var(--mono); font-size:11px; font-weight:700; color:var(--gold)}
+  .m-count{font-family:var(--mono); font-size:10px; color:var(--ink-faint); margin-top:3px; letter-spacing:.04em}
+  .mile.done .m-count{color:var(--gold)}
+  @media (max-width:760px){
+    .inc-eq{text-align:left; width:100%}
+    .inc-miles{grid-template-columns:repeat(2,1fr)}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-inner">
+    <div class="brand">
+      <div class="glyph"><span></span></div>
+      <div class="title"><h1>Droidex Tracker</h1><p>Star Wars · Droid Tycoon</p></div>
+    </div>
+    <div class="hud">
+      <div class="stat"><div class="k">Droids</div><div class="v" id="s-droids">0<small>/50</small></div></div>
+      <div class="stat"><div class="k">Tiers</div><div class="v" id="s-tiers">0<small>/250</small></div></div>
+      <div class="stat cps"><div class="k">Credits / sec</div><div class="v" id="s-cps">0</div></div>
+    </div>
+  </div>
+  <div class="meter-wrap"><div class="meter"><i id="meter"></i></div></div>
+</header>
+
+<div class="wrap">
+  <div class="income" id="income">
+    <div class="inc-row">
+      <div class="inc-mult">
+        <label>Total multiplier</label>
+        <div class="mult-box">&times;<input id="mult" type="number" min="1" step="0.05" value="4.2" aria-label="Total credit multiplier"></div>
+      </div>
+      <div class="inc-eq">Base <b id="inc-base">0</b>/s &nbsp;&times;&nbsp; multiplier &nbsp;=&nbsp; <b id="eff-cps" class="big">0</b>/s effective</div>
+    </div>
+    <div class="inc-miles" id="miles"></div>
+    <div class="pl-hint">Read your total multiplier off the game and set it here — it already bakes in rebirth, milestones, specialist and event boosts, so don't add them twice. The milestones below are informational: each tier grants its bonus once you collect 25 droids at that tier.</div>
+  </div>
+
+  <div class="planner" id="planner">
+    <div class="pl-head">
+      <div class="pl-title"><span class="spark"></span> Rebirth Planner</div>
+      <div class="pl-nav">
+        <button class="pl-step" id="pl-prev" aria-label="Previous rebirth">&#8249;</button>
+        <div class="pl-lvl" id="pl-lvl">Rebirth 1<small>target</small></div>
+        <button class="pl-step" id="pl-next" aria-label="Next rebirth">&#8250;</button>
+        <div class="pl-goal" id="pl-goal"><b>10,000</b>credits goal</div>
+      </div>
+    </div>
+    <div class="pl-body" id="pl-body"></div>
+    <div class="pl-hint">Higher tiers satisfy lower requirements. "Any Legendary" = any tier of that droid. A droid only counts as ready once it's collected AND ticked "in base." Tap a droid name to find it in the list below.</div>
+  </div>
+
+  <div class="controls">
+    <label class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="text" placeholder="Search droids…" autocomplete="off">
+    </label>
+    <div class="chips" id="rarity-chips">
+      <button class="chip r-common" data-rarity="Common">Common</button>
+      <button class="chip r-rare" data-rarity="Rare">Rare</button>
+      <button class="chip r-epic" data-rarity="Epic">Epic</button>
+      <button class="chip r-legendary" data-rarity="Legendary">Legend</button>
+      <button class="chip r-mythic" data-rarity="Mythic">Mythic</button>
+    </div>
+    <div class="chips" id="type-chips">
+      <button class="chip" data-type="Worker">Worker</button>
+      <button class="chip" data-type="Astromech">Astromech</button>
+      <button class="chip" data-type="Battle">Battle</button>
+    </div>
+    <button class="chip" id="owned-toggle" data-on="false">Owned only</button>
+    <div class="spacer"></div>
+    <button class="btn primary" id="dl-xlsx">Download .xlsx</button>
+    <button class="btn" id="dl-csv">Download .csv</button>
+    <button class="btn ghost" id="reset">Reset</button>
+  </div>
+
+  <div class="manifest">
+    <div class="thead">
+      <div>Droid</div><div>Rarity</div>
+      <div class="tier">Default</div><div class="tier">Gold</div><div class="tier">Diamond</div><div class="tier">Rainbow</div>
+      <div class="tier">Beskar <em>1.5×RB</em></div>
+    </div>
+    <div class="rows" id="rows"></div>
+  </div>
+
+  <footer>
+    <span>Click a box to mark a tier collected. Progress saves to this browser automatically. <span class="save-note" id="saved">saved ✓</span></span>
+    <span>Beskar income = 1.5× Rainbow (confirmed via ARG 504/s) · 50 documented droids</span>
+  </footer>
+</div>
+
+<script>
+const DROIDS = [
+  ["Mouse","Worker","Common",2,4,8,16],["Pit","Worker","Common",2,4,8,16],["Gonk","Worker","Common",4,8,16,32],
+  ["CB","Astromech","Common",3,6,12,24],["R3","Astromech","Common",3,6,12,24],["R5","Astromech","Common",3,6,12,24],
+  ["R8","Astromech","Common",4,8,16,32],["Imperial Probe","Battle","Common",6,12,24,48],["B1 Battle","Battle","Common",5,10,20,40],
+  ["DRK-1 Probe","Battle","Common",3,6,12,24],["ID10","Battle","Common",4,8,16,32],
+  ["BDX Explorer","Worker","Rare",15,30,60,120],["ARG","Worker","Rare",42,84,168,336],["Senate Hovercam","Worker","Rare",46,92,184,368],
+  ["BU-4D","Worker","Rare",58,116,232,464],["Bal-Core","Worker","Rare",23,46,92,184],["ROLL-R","Worker","Rare",31,62,124,248],
+  ["2BB","Astromech","Rare",17,34,68,136],["A-LT","Astromech","Rare",36,72,144,288],["R4","Astromech","Rare",50,100,200,400],
+  ["R9","Astromech","Rare",54,108,216,432],["B1 Security","Battle","Rare",66,132,264,528],["NAV-EX","Battle","Rare",18,36,72,144],
+  ["VECT-Arm","Battle","Rare",27,54,108,216],["HOV-R","Battle","Rare",62,124,248,496],
+  ["Groundmech","Worker","Epic",120,240,480,960],["LO","Worker","Epic",240,480,960,1920],["AMP Walker","Worker","Epic",570,1140,2280,4560],
+  ["SEN-TRI","Worker","Epic",510,1020,2040,4080],["Opti-Pod","Worker","Epic",380,780,1560,3120],["BB","Astromech","Epic",150,300,600,1200],
+  ["R2","Astromech","Epic",360,720,1440,2880],["R6","Astromech","Epic",300,600,1200,2400],["TRAK-R","Astromech","Epic",330,660,1320,2640],
+  ["ORB-Walker","Astromech","Epic",180,360,720,1440],["Util-Tec","Astromech","Epic",210,420,840,1680],["B1 Heavy","Battle","Epic",630,1260,2520,5040],
+  ["B2 Super","Battle","Epic",420,840,1680,3360],["B2 Heavy","Battle","Epic",480,960,1920,3840],["Strike-Orb","Battle","Epic",540,1080,2160,4320],
+  ["Haul-R","Battle","Epic",270,540,1080,2160],["LNG-Shot","Battle","Epic",450,900,1080,3600],["Proto-Roller","Battle","Epic",972,1940,3880,7760],
+  ["Mecha-Droid","Worker","Legendary",1040,2080,4160,8320],["Mono-WLKR","Worker","Legendary",1120,2230,4460,8920],["BB9","Astromech","Legendary",900,1800,3600,7200],
+  ["R7","Astromech","Legendary",1190,2380,4750,9500],["B2-RP","Battle","Legendary",1400,2800,5600,11200],["Cyclo-Grav","Battle","Legendary",1260,2520,5040,10080],
+  ["Opti-STRK","Battle","Legendary",1510,3020,6040,12080],["BB-8","Astromech","Mythic",null,null,null,null],
+];
+const TIERS=["default","gold","diamond","rainbow","beskar"];
+const TIER_LABEL={default:"Default",gold:"Gold",diamond:"Diamond",rainbow:"Rainbow",beskar:"Beskar"};
+const COL={default:3,gold:4,diamond:5,rainbow:6};
+const RAR_COLOR={Common:"--common",Rare:"--rare",Epic:"--epic",Legendary:"--legendary",Mythic:"--mythic"};
+const KEY="droidex_tracker_v1";
+
+// income for a tier; beskar = 2x rainbow (estimated)
+function tierIncome(d,t){
+  if(t==="beskar"){ return d[6]==null?null:Math.round(d[6]*1.5); }
+  return d[COL[t]];
+}
+
+let state={};
+try{ const raw=localStorage.getItem(KEY); if(raw) state=JSON.parse(raw)||{}; }catch(e){ state={}; }
+const DKEY="droidex_deploy_v1";
+let deployed={};
+try{ const d=localStorage.getItem(DKEY); if(d) deployed=JSON.parse(d)||{}; }catch(e){ deployed={}; }
+function deployedFor(idx){ return !!deployed[idx]; }
+const MKEY="droidex_mult_v1";
+let mult=4.2;
+try{ const m=parseFloat(localStorage.getItem(MKEY)); if(m>0) mult=m; }catch(e){}
+// migrate old "base" key -> "default"
+let migrated=false;
+for(const k in state){ if(state[k] && state[k].base!=null){ state[k].default=state[k].base; delete state[k].base; migrated=true; } }
+let storageOK=true;
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify(state)); localStorage.setItem(DKEY,JSON.stringify(deployed)); flashSaved(); }catch(e){ storageOK=false; } }
+let saveTimer;
+function flashSaved(){ const el=document.getElementById("saved"); el.classList.add("show"); clearTimeout(saveTimer); saveTimer=setTimeout(()=>el.classList.remove("show"),1100); }
+
+const filters={q:"",rarities:new Set(),types:new Set(),ownedOnly:false};
+const css=getComputedStyle(document.documentElement);
+const fmt=n=>n.toLocaleString("en-US");
+function has(i,t){ return !!(state[i] && state[i][t]); }
+function ownedAny(i){ return TIERS.some(t=>has(i,t)); }
+function bestTierIncome(i){
+  for(let k=TIERS.length-1;k>=0;k--){ if(has(i,TIERS[k])){ const v=tierIncome(DROIDS[i],TIERS[k]); return v||0; } }
+  return 0;
+}
+
+const rowsEl=document.getElementById("rows");
+const TOTAL_TIERS=DROIDS.length*TIERS.length;
+function passesFilter(i){
+  const d=DROIDS[i];
+  if(filters.q && !d[0].toLowerCase().includes(filters.q)) return false;
+  if(filters.rarities.size && !filters.rarities.has(d[2])) return false;
+  if(filters.types.size && !filters.types.has(d[1])) return false;
+  if(filters.ownedOnly && !ownedAny(i)) return false;
+  return true;
+}
+function render(){
+  let html="";
+  for(let i=0;i<DROIDS.length;i++){
+    if(!passesFilter(i)) continue;
+    const d=DROIDS[i], color=css.getPropertyValue(RAR_COLOR[d[2]]).trim();
+    const complete=TIERS.every(t=>has(i,t));
+    let cells="";
+    TIERS.forEach(t=>{
+      const inc=tierIncome(d,t); const isBsk=t==="beskar";
+      let incTxt;
+      if(inc==null) incTxt='<span class="inc tbc">TBC</span>';
+      else if(isBsk) incTxt='<span class="inc est" title="Beskar = 1.5x Rainbow (confirmed via ARG: 504/s).">~'+fmt(inc)+'</span>';
+      else incTxt='<span class="inc">'+fmt(inc)+'</span>';
+      cells+='<div class="cell" data-tier="'+TIER_LABEL[t]+'">'
+           +'<input type="checkbox" class="cb'+(isBsk?' bsk':'')+'" data-i="'+i+'" data-t="'+t+'" '+(has(i,t)?"checked":"")+' aria-label="'+d[0]+' '+t+'">'
+           +incTxt+'</div>';
+    });
+    html+='<div class="row'+(complete?' complete':'')+'">'
+        +'<div class="dname"><span class="dot" style="background:'+color+';box-shadow:0 0 8px '+color+'66"></span>'
+        +'<div><div class="nm">'+d[0]+'</div><div class="ty">'+d[1]+'</div></div></div>'
+        +'<div class="rar"><span class="rbadge b-'+d[2].toLowerCase()+'">'+d[2]+'</span></div>'
+        +'<div class="tiergrid" style="display:contents">'+cells+'</div></div>';
+  }
+  rowsEl.innerHTML=html||'<div class="empty"><b>No droids match</b>Try clearing a filter or the search box.</div>';
+  updateStats();
+}
+function updateStats(){
+  let droids=0,tiers=0,cps=0;
+  const tierCount={default:0,gold:0,diamond:0,rainbow:0,beskar:0};
+  for(let i=0;i<DROIDS.length;i++){
+    if(ownedAny(i)) droids++;
+    TIERS.forEach(t=>{ if(has(i,t)){ tiers++; tierCount[t]++; } });
+    cps+=bestTierIncome(i);
+  }
+  document.getElementById("s-droids").innerHTML=droids+'<small>/'+DROIDS.length+'</small>';
+  document.getElementById("s-tiers").innerHTML=tiers+'<small>/'+TOTAL_TIERS+'</small>';
+  const eff=Math.round(cps*mult);
+  animateCps(eff);
+  document.getElementById("meter").style.width=(tiers/TOTAL_TIERS*100)+"%";
+  document.getElementById("inc-base").textContent=fmt(cps);
+  document.getElementById("eff-cps").textContent=fmt(eff);
+  renderMilestones(tierCount);
+  renderPlanner();
+}
+const MILESTONES=[["default","Default",25],["gold","Gold",30],["diamond","Diamond",35],["rainbow","Rainbow",40],["beskar","Beskar",60]];
+function renderMilestones(tc){
+  let h="";
+  MILESTONES.forEach(([key,label,bonus])=>{
+    const c=tc[key], done=c>=25;
+    h+='<div class="mile'+(done?" done":"")+'"><div class="m-top"><span class="m-name">'+label+'</span><span class="m-bonus">+'+bonus+'%</span></div>'
+      +'<div class="m-count">'+Math.min(c,25)+' / 25'+(done?" &#10003;":"")+'</div></div>';
+  });
+  document.getElementById("miles").innerHTML=h;
+}
+let cpsShown=0;
+function animateCps(target){
+  const el=document.getElementById("s-cps"); cancelAnimationFrame(animateCps._r);
+  const start=cpsShown,t0=performance.now(),dur=420;
+  (function step(now){ const p=Math.min(1,(now-t0)/dur),e=1-Math.pow(1-p,3); cpsShown=Math.round(start+(target-start)*e); el.textContent=fmt(cpsShown); if(p<1) animateCps._r=requestAnimationFrame(step); })(t0);
+}
+
+rowsEl.addEventListener("change",e=>{
+  const cb=e.target.closest(".cb"); if(!cb) return;
+  const i=+cb.dataset.i,t=cb.dataset.t;
+  state[i]=state[i]||{}; state[i][t]=cb.checked;
+  if(!TIERS.some(x=>state[i][x])) delete state[i];
+  save();
+  cb.closest(".row").classList.toggle("complete",TIERS.every(x=>has(i,x)));
+  updateStats();
+});
+document.getElementById("q").addEventListener("input",e=>{ filters.q=e.target.value.trim().toLowerCase(); render(); });
+document.getElementById("mult").addEventListener("input",e=>{
+  const v=parseFloat(e.target.value); if(v>0){ mult=v; try{ localStorage.setItem(MKEY,String(v)); }catch(err){} updateStats(); }
+});
+function wireChips(id,key){
+  document.getElementById(id).addEventListener("click",e=>{
+    const c=e.target.closest(".chip"); if(!c) return;
+    const val=c.dataset.rarity||c.dataset.type, set=filters[key];
+    if(set.has(val)){ set.delete(val); c.setAttribute("aria-pressed","false"); }
+    else{ set.add(val); c.setAttribute("aria-pressed","true"); }
+    render();
+  });
+}
+wireChips("rarity-chips","rarities"); wireChips("type-chips","types");
+document.getElementById("owned-toggle").addEventListener("click",e=>{ filters.ownedOnly=!filters.ownedOnly; e.target.setAttribute("aria-pressed",filters.ownedOnly); render(); });
+document.getElementById("reset").addEventListener("click",()=>{ if(!confirm("Clear all tracked droids? This can't be undone.")) return; state={}; deployed={}; save(); render(); });
+
+function buildRows(){
+  const head=["Name","Type","Rarity","Default /s","Gold /s","Diamond /s","Rainbow /s","Beskar /s (1.5xRB)",
+              "Have Default","Have Gold","Have Diamond","Have Rainbow","Have Beskar","Best-Tier /s"];
+  const body=DROIDS.map((d,i)=>{
+    const bsk=tierIncome(d,"beskar");
+    return [d[0],d[1],d[2],
+      d[3]??"TBC",d[4]??"TBC",d[5]??"TBC",d[6]??"TBC", bsk==null?"TBC":bsk,
+      has(i,"default")?"x":"",has(i,"gold")?"x":"",has(i,"diamond")?"x":"",has(i,"rainbow")?"x":"",has(i,"beskar")?"x":"",
+      bestTierIncome(i)];
+  });
+  return {head,body};
+}
+function stamp(){ return new Date().toISOString().slice(0,10); }
+function download(blob,name){ const url=URL.createObjectURL(blob),a=document.createElement("a"); a.href=url; a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(url); a.remove();},100); }
+document.getElementById("dl-csv").addEventListener("click",()=>{
+  const {head,body}=buildRows();
+  const esc=v=>{ v=String(v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
+  const csv=[head,...body].map(r=>r.map(esc).join(",")).join("\r\n");
+  download(new Blob([csv],{type:"text/csv;charset=utf-8"}),"droidex-"+stamp()+".csv");
+});
+document.getElementById("dl-xlsx").addEventListener("click",()=>{
+  if(typeof XLSX==="undefined"){ alert("Spreadsheet engine didn't load (you're likely offline). Use Download .csv — it opens in Excel and Google Sheets just fine."); return; }
+  const {head,body}=buildRows();
+  const ws=XLSX.utils.aoa_to_sheet([head,...body]);
+  ws["!cols"]=[{wch:16},{wch:11},{wch:11},{wch:10},{wch:9},{wch:10},{wch:11},{wch:16},{wch:11},{wch:10},{wch:11},{wch:12},{wch:11},{wch:12}];
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"Droidex"); XLSX.writeFile(wb,"droidex-"+stamp()+".xlsx");
+});
+
+// ---------- REBIRTH PLANNER ----------
+const REBIRTH=[
+  {lvl:1, credits:"10,000", reqs:[["CB","default"],["Pit","default"],["DRK-1 Probe","default"]]},
+  {lvl:2, credits:"150,000", reqs:[["BDX Explorer","default"],["2BB","default"],["Bal-Core","default"]]},
+  {lvl:3, credits:"975,000", reqs:[["A-LT","default"],["BU-4D","default"],["R9","gold"]]},
+  {lvl:4, credits:"2.95M", reqs:[["ARG","gold"],["B1 Security","gold"],["Groundmech","default"]]},
+  {lvl:5, credits:"5.35M", reqs:[["BU-4D","gold"],["HOV-R","gold"],["R9","diamond"]]},
+  {lvl:6, credits:"9.85M", reqs:[["Groundmech","gold"],["ARG","diamond"],["A-LT","diamond"]]},
+  {lvl:7, credits:"14.5M", reqs:[["BB","gold"],["B1 Security","diamond"],["BU-4D","diamond"]]},
+  {lvl:8, credits:"36M", reqs:[["Util-Tec","gold"],["LO","gold"],["HOV-R","diamond"]]},
+  {lvl:9, credits:"89M", reqs:[["Groundmech","rainbow"],["R6","gold"],["TRAK-R","gold"]]},
+  {lvl:10, credits:"220M", reqs:[["LO","rainbow"],["Haul-R","rainbow"],["Strike-Orb","gold"]]},
+  {lvl:11, credits:"550M", reqs:[["AMP Walker","any"],["B1 Heavy","any"],["BB9","default"]]},
+  {lvl:12, credits:"1.36B", reqs:[["Proto-Roller","any"],["Mecha-Droid","default"],["Mono-WLKR","default"]]},
+  {lvl:13, credits:"3.40B", reqs:[["R7","any"],["Cyclo-Grav","any"],["B2-RP","any"]]},
+  {lvl:14, credits:"8.45B", reqs:[["Opti-STRK","any"],["Mono-WLKR","any"],["Mecha-Droid","any"]]},
+  {lvl:15, credits:"21B", reqs:[["B2-RP","any"],["BB9","any"],["R7","any"]]},
+  {lvl:16, credits:"52B", reqs:[["Opti-STRK","gold"],["Mono-WLKR","diamond"],["Proto-Roller","diamond"]]},
+  {lvl:17, credits:"130B", reqs:[["B2-RP","diamond"],["Cyclo-Grav","diamond"],["Mecha-Droid","diamond"]]},
+  {lvl:18, credits:"325B", reqs:[["Opti-STRK","any"],["R7","any"],["Mono-WLKR","any"]]},
+  {lvl:19, credits:"810B", reqs:[["B2-RP","rainbow"],["Cyclo-Grav","rainbow"],["Proto-Roller","rainbow"]]},
+  {lvl:20, credits:"2T", reqs:[["R7","rainbow"],["Opti-STRK","rainbow"],["Mecha-Droid","rainbow"]]},
+];
+const NAME2IDX={}; DROIDS.forEach((d,i)=>NAME2IDX[d[0]]=i);
+const TIER_RANK={default:0,gold:1,diamond:2,rainbow:3,beskar:4};
+const TIER_NAME={default:"Default",gold:"Gold",diamond:"Diamond",rainbow:"Rainbow",beskar:"Beskar",any:"Any Legendary"};
+function highestOwned(idx){ for(let k=TIERS.length-1;k>=0;k--){ if(has(idx,TIERS[k])) return TIERS[k]; } return null; }
+function reqMet(idx,tier){
+  if(idx==null) return false;
+  if(tier==="any") return ownedAny(idx);
+  const need=TIER_RANK[tier];
+  return TIERS.some((t,k)=>k>=need && has(idx,t));
+}
+let plLevel=1, plUserSet=false;
+function levelReady(rb){ return rb.reqs.every(([n,t])=>{ const i=NAME2IDX[n]; return reqMet(i,t)&&deployedFor(i); }); }
+function autoPickLevel(){
+  if(plUserSet) return;
+  for(const rb of REBIRTH){ if(!levelReady(rb)){ plLevel=rb.lvl; return; } }
+  plLevel=REBIRTH[REBIRTH.length-1].lvl;
+}
+function renderPlanner(){
+  autoPickLevel();
+  const rb=REBIRTH[plLevel-1];
+  document.getElementById("pl-lvl").innerHTML="Rebirth "+rb.lvl+"<small>target</small>";
+  document.getElementById("pl-goal").innerHTML="<b>"+rb.credits+"</b>credits goal";
+  document.getElementById("pl-prev").disabled=(plLevel<=1);
+  document.getElementById("pl-next").disabled=(plLevel>=REBIRTH.length);
+  let ready=0, collectedCount=0, rows="";
+  rb.reqs.forEach(([name,tier])=>{
+    const idx=NAME2IDX[name], collected=reqMet(idx,tier), dep=deployedFor(idx);
+    const isReady=collected&&dep; if(isReady) ready++; if(collected) collectedCount++;
+    const ho=highestOwned(idx);
+    let cls,mark,sub;
+    if(isReady){ cls="ok"; mark="&#10003;"; sub="ready in base"; }
+    else if(collected){ cls="warn"; mark="!"; sub="collected — deploy it in base"; }
+    else { cls="no"; mark="&#10007;"; sub = ho ? "have "+TIER_NAME[ho]+", need "+TIER_NAME[tier] : "not collected yet"; }
+    rows+='<div class="pl-req" data-name="'+name+'">'
+        +'<div class="pl-status '+cls+'">'+mark+'</div>'
+        +'<div class="pl-dn"><div class="n">'+name+'</div><div class="s">'+sub+'</div></div>'
+        +'<div class="pl-tier t-'+tier+'">'+TIER_NAME[tier]+'</div>'
+        +'<label class="pl-deploy"><input type="checkbox" class="dep" data-i="'+idx+'" '+(dep?"checked":"")+'> in base</label>'
+        +'</div>';
+  });
+  const allReady=ready===rb.reqs.length, allCollected=collectedCount===rb.reqs.length;
+  let flagCls,flagTxt;
+  if(allReady){ flagCls="go"; flagTxt="Ready to rebirth — farm "+rb.credits; }
+  else if(allCollected){ flagCls="wait"; flagTxt="Deploy your droids in base"; }
+  else { flagCls="wait"; flagTxt="Keep grinding"; }
+  rows+='<div class="pl-foot"><div class="pl-tally"><b>'+ready+'</b> / '+rb.reqs.length+' ready in base</div>'
+      +'<div class="pl-flag '+flagCls+'">'+flagTxt+'</div></div>';
+  document.getElementById("pl-body").innerHTML=rows;
+}
+document.getElementById("pl-prev").addEventListener("click",()=>{ if(plLevel>1){ plLevel--; plUserSet=true; renderPlanner(); } });
+document.getElementById("pl-next").addEventListener("click",()=>{ if(plLevel<REBIRTH.length){ plLevel++; plUserSet=true; renderPlanner(); } });
+document.getElementById("pl-body").addEventListener("click",e=>{
+  if(e.target.closest(".pl-deploy")) return;
+  const r=e.target.closest(".pl-req"); if(!r) return;
+  const q=document.getElementById("q"); q.value=r.dataset.name; filters.q=r.dataset.name.toLowerCase(); render();
+  document.querySelector(".manifest").scrollIntoView({behavior:"smooth",block:"start"});
+});
+document.getElementById("pl-body").addEventListener("change",e=>{
+  const cb=e.target.closest(".dep"); if(!cb) return;
+  const i=+cb.dataset.i; deployed[i]=cb.checked; if(!deployed[i]) delete deployed[i]; save(); renderPlanner();
+});
+
+render();
+document.getElementById("mult").value=mult;
+if(migrated) save();
+if(!storageOK){ const s=document.getElementById("saved"); s.textContent="(progress won't save in this preview — works when opened as a file)"; s.classList.add("show"); }
+</script>
+</body>
+</html>
